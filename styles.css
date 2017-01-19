@@ -1,0 +1,13 @@
+body {
+  margin: 10px 30px;
+}
+table {
+  margin: 10px;
+}
+table th {
+  padding-right: 10px;
+  text-align: left;
+}
+section {
+  padding: 0 10px;
+}
