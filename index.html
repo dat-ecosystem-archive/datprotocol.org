@@ -5,41 +5,56 @@
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <h1>Decentralized Archive Transport</h1>
-    <p>Dat is a fast, versioned, secure files protocol.</p>
-    <table>
-      <tr><th>Fast</th><td>Archives sync from multiple sources at once.</td></tr>
-      <tr><th>Resilient</th><td>Archives can change hosts without changing their URLs.</td></tr>
-      <tr><th>Versioned</th><td>Changes are written to an append-only log.</td></tr>
-      <tr><th>Secure</th><td>Updates are signed, checksummed, and forced to be distributed unformly.</td></tr>
-      <tr><th>P2P</th><td>Any device can be a host.</td></tr>
-    </table>
-    <p><a href="https://github.com/datprotocol">View on Github</a></p>
+    <div class="content">
+      <h1>Decentralized Archive Transport</h1>
+      <h2>The Dat Protocol</h2>
+      <p>Dat is a fast, versioned, secure files protocol.</p>
+      <table>
+        <tr><th>Fast</th><td>Archives sync from multiple sources at once.</td></tr>
+        <tr><th>Resilient</th><td>Archives can change hosts without changing their URLs.</td></tr>
+        <tr><th>Versioned</th><td>Changes are written to an append-only log.</td></tr>
+        <tr><th>Secure</th><td>Updates are signed, checksummed, and forced to be distributed unformly.</td></tr>
+        <tr><th>P2P</th><td>Any device can be a host.</td></tr>
+      </table>
+      <p>
+        Dat uses <a href="https://en.wikipedia.org/wiki/Rabin_fingerprint">rabin file-chunking<a/> and append-only feeds verified by <a href="https://en.wikipedia.org/wiki/Merkle_tree">merkle trees</a> to securely distribute mutable files through a peer-to-peer network.
+        Peers are discovered using multiple overlapping networks (DHT, DNS, mUDP) and contacted via TCP or UTP.
+      </p>
+      <p>
+        Archives are identified by <a href="https://ed25519.cr.yp.to/">ed25519 public-keys</a> encoded as 64-character hex strings, making the URLs hostless and globally unique.
+        This site is served at <a href="dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/"><code>dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/</code></a>.
+      </p>
+      <p>
+        Dat generalizes concepts from <a href="https://www.certificate-transparency.org/">certificate transparency</a> to provide its security guarantees.
+        All updates are written to a flattened merkle-tree (the feed) which is signed by the identifying public-key.
+        Data-feeds are distributed uniformly to all peers, and authors are unable to split the change history or serve alternative versions of an archive without detection.
+      <p><a href="https://github.com/datprotocol">View on Github</a></p>
 
-    <br>
+      <br>
 
-    <h2>Applications</h2>
+      <h2>Applications</h2>
 
-    <section>
-      <h3><a href="https://github.com/datproject/dat">Dat Command-line</a></h3>
-      <p>Sync and share folders from the command-line.</p>
+      <section>
+        <h3><a href="https://github.com/datproject/dat">Dat Command-line</a></h3>
+        <p>Sync and share folders from the command-line.</p>
 
-      <h3><a href="https://github.com/datproject/dat-desktop">Dat Desktop</a></h3>
-      <p>A simple, GUI-based client for dat archives.</p>
+        <h3><a href="https://github.com/datproject/dat-desktop">Dat Desktop</a></h3>
+        <p>A simple, GUI-based client for dat archives.</p>
 
-      <h3><a href="https://beakerbrowser.com">Beaker Browser</a></h3>
-      <p>An experimental P2P browser, which uses dat as an alternative to HTTP.</p>
-    </section>
+        <h3><a href="https://beakerbrowser.com">Beaker Browser</a></h3>
+        <p>An experimental P2P browser, which uses dat as an alternative to HTTP.</p>
+      </section>
 
-    <br>
+      <br>
 
-    <h2>Modules</h2>
-    <p>Dat is authored in Javascript, and is split into reusable, self-contained modules.</p>
-    <ul>
-      <li><a href="">Dat-Node</a>: A easy-to-use, comprehensive library for nodejs which wraps all modules.</li>
-      <li><a href="https://github.com/mafintosh/hypercore">Hypercore</a>: The internal protocol for distributing and replicating feeds of binary data.
-      <li><a href="https://github.com/mafintosh/hyperdrive">Hyperdrive</a>: The internal protocol for reading and writing files using Hypercore.</li>
-      <li><a href="https://github.com/mafintosh/discovery-swarm">Discovery-Swarm</a>: Uses the Mainline DHT, DNS Servers, and Multicast UDP to discover peers, and then establishes connections using TCP and UTP.</li> 
-    </ul>
+      <h2>Modules</h2>
+      <p>Dat is authored in Javascript, and is split into reusable, self-contained modules.</p>
+      <ul>
+        <li><a href="https://github.com/datproject/dat-node">Dat-Node</a>: A easy-to-use, comprehensive library for nodejs which wraps all modules.</li>
+        <li><a href="https://github.com/mafintosh/hypercore">Hypercore</a>: The internal protocol for distributing and replicating feeds of binary data.
+        <li><a href="https://github.com/mafintosh/hyperdrive">Hyperdrive</a>: The internal protocol for reading and writing files using Hypercore.</li>
+        <li><a href="https://github.com/mafintosh/discovery-swarm">Discovery-Swarm</a>: Uses the Mainline DHT, DNS Servers, and Multicast UDP to discover peers, and then establishes connections using TCP and UTP.</li> 
+      </ul>
+    </div>
   </body>
 </html>

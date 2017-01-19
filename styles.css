@@ -1,5 +1,10 @@
 body {
-  margin: 10px 30px;
+  background: #eee;
+}
+.content {
+  max-width: 800px;
+  padding: 10px 30px;
+  background: #fff;
 }
 table {
   margin: 10px;
