@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>DAT Decentralized Archive Transport</title>
+    <title>Decentralized Archive Transport</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
@@ -17,7 +17,7 @@
         <tr><th>P2P</th><td>Any device can be a host.</td></tr>
       </table>
       <p>
-        Dat uses <a href="https://en.wikipedia.org/wiki/Rabin_fingerprint">rabin file-chunking<a/> and append-only feeds verified by <a href="https://en.wikipedia.org/wiki/Merkle_tree">merkle trees</a> to securely distribute mutable files through a peer-to-peer network.
+        Dat uses <a href="https://en.wikipedia.org/wiki/Rabin_fingerprint">rabin file-chunking<a/> and append-only feeds verified by <a href="https://en.wikipedia.org/wiki/Merkle_tree">merkle trees</a> to securely distribute mutable files with "live" update-pushing through a peer-to-peer network.
         Peers are discovered using multiple overlapping networks (DHT, DNS, mUDP) and contacted via TCP or UTP.
       </p>
       <p>
@@ -29,6 +29,15 @@
         All updates are written to a flattened merkle-tree (the feed) which is signed by the identifying public-key.
         Data-feeds are distributed uniformly to all peers, and authors are unable to split the change history or serve alternative versions of an archive without detection.
       <p><a href="https://github.com/datprotocol">View on Github</a></p>
+
+      <br>
+
+      <h2>Documentation</h2>
+
+      <section>
+        <h3><a href="/spec.html">Dat Specification</a></h3>
+        <p><em>Draft, in progress</em>. A complete specification of the Dat protocol.</p>
+      </section>
 
       <br>
 
