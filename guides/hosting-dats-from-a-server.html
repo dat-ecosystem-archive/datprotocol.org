@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Guide: Hosting Archives from a Server - Decentralized Archive Transport</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="content">
+      <p><a href="/">&laquo; home</a></p>
+
+      <h1>Guide: Hosting Archives from a Server</h1>
+
+      <p>This guide will show you how to use some simple command-line tools to host archives on a VPS. (This guide is designed for systemd-based systems, including debian/ubuntu.)</p>
+
+      <h2>TL;DR</h2>
+
+      <p>Do this:</p>
+
+      <pre><code>
+      npm install -g dat-next lil-pids add-to-systemd
+      mkdir ~/dats
+      echo "dat clone dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/ \
+        ~/dats/datprotocol \
+        --upload --quiet" > ~/dats/services
+      sudo add-to-systemd dat-lil-pids $(which lil-pids) ~/dats/services ~/dats/pids
+      sudo systemctl start dat-lil-pids
+      </pre></code>
+
+      <p>Add and remove <code>dat clone</code> commands to <strong>~/dats/services</strong> to change the archives your server hosts. You don't need to restart the dat-lil-pids service, because it watches the services file and automatically adds/removes processes to match it.</p>
+
+      <h2>Step-by-step</h2>
+
+      <h3>Installation</h3>
+
+      <p>On your server, install the following tools from npm:</p>
+
+      <pre><code>npm install -g dat-next lil-pids add-to-systemd</code></pre>
+
+      <h3>Create the Archives</h3>
+
+      <p>Follow the <a href="./dat-cli">Dat CLI Guide</a> to create the archives. You can do this on your local machine, or on the server. Take note of the URLs of the archives you want to rehost.</p>
+
+      <p>For this guide, we'll use this site (datprotocol.com) as an example archive. It is located at <a href="dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/"><code>dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/</code></a>.</p>
+
+      <h3>Upload the Archives</h3>
+
+      <p>To make sure the archives get to the server, we'll manually upload the archives first. In this guide, we'll use the <code>~/dats</code> directory.</p>
+
+      <pre><code>
+      mkdir ~/dats
+      cd ~/dats
+      dat clone dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/ ./datprotocol
+
+      Cloning Dat Archive: /home/alice/dats/datprotocol
+      Link: dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93
+
+      Metadata: [==================================================>] 100%
+      Content:  [==================================================>] 100%
+      Total size: 7 files (38.2 kB)
+
+      2 peers on the Dat Network
+      </code></pre>
+
+      <p>Once this is done, you can close the process.</p>
+
+      <p><em>Note: there's an open issue that can cause the Content progress to stop at under... or *over*... 100%, even though all content is synced. Don't worry about it.</em></p>
+
+      <h3>Write the Services File</h3>
+
+      <p>Now, we want to turn that 'clone' command into a long-running process. The <a href="https://github.com/mafintosh/lil-pids">lil-pids</a> tool is a simple process-manager which watches a "services file" to determine which commands should be active. We'll use it to spawn a number of dat-clone processes. The file we'll write is <strong>~/dats/services</strong>.</p>
+
+      <p>The command is the same as before, except that we'll add <code>--upload</code> to rehost the archive to the network, and <code>--quiet</code> to suppress output that we don't need cluttering our logs.</p>
+
+      <p>Use an editor to write to <strong>~/dats/services</strong>:</p>
+
+      <pre><code>
+      dat clone dat://ff34725120b2f3c5bd5028e4f61d14a45a22af48a7b12126d5d588becde88a93/ \
+        ~/dats/datprotocol \
+        --upload --quiet
+      </code></pre>
+
+      <p>To start the commands, we run:</p>
+
+      <pre><code>
+      lil-pids ~/dats/services ~/dats/pids</code></pre>
+
+      <p>You can view the process ids of the commands (in another CLI session) with <code>cat ~/dats/pids</code>.</p>
+
+      <h3>Add to Systemd</h3>
+
+      <p>Finally, we want to turn the <code>lil-pids</code> process into a daemon. Run these commands to do so:</p>
+
+      <pre><code>
+      sudo add-to-systemd dat-lil-pids $(which lil-pids) ~/dats/services ~/dats/pids
+      sudo systemctl start dat-lil-pids
+      </code></pre>
+
+      <p>If successful, you'll be able to run <code>sudo systemctl status dat-lil-pids</code> and see the output.</p>
+
+      <p>If you want to add or remove dats, you don't need to restart the service. Just edit the <code>~/dats/services</code> file to include the additional <code>dat clone</code> commands. After saving, lil-pids will automatically open and close processes to match the file.</p>
+
+    </div>
+  </body>
+</html>
