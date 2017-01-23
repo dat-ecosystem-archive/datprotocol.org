@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Guide: Using Dat from the command-line - Decentralized Archive Transport</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="content">
+      <p><a href="/">&laquo; home</a></p>
+
+      <h1>Guide: Using Dat from the command-line</h1>
+
+      <p>The dat-next command line tool can be used to share, download, and sync files across many computers via the command line.</p>
+
+      <h3>Installation</h3>
+
+      <p>Install via npm:</p>
+
+      <pre><code>npm install -g dat-next</code></pre>
+
+      <p>You can make sure the install worked by running the <code>dat</code> command.
+      The usage guide should print.</p>
+
+      <p>See the <a href="https://github.com/datproject/dat#troubleshooting">installation troubleshooting</a> for tips if the installation failed.</p>
+
+      <h3>Sharing Files</h3>
+
+      <ul>
+      <li><code>cd my-files-to-share</code> - change to the folder to share</li>
+      <li><code>dat create</code> - create a Dat archive and import the files from the folder</li>
+      </ul>
+
+      <pre><code>
+      dat create
+      Dat Archive initialized: /path/to/my-files-to-share
+      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+
+      File import finished!
+      Total Size: 50 files (40.5 MB)
+      </code></pre>
+
+      <p>Now you should have a <code>.dat</code> folder inside <code>my-files-to-share</code>. Once the dat is created, you can start sharing it over the p2p network:</p>
+
+      <ul>
+      <li><code>dat sync</code> - share the files over the Dat network</li>
+      </ul>
+
+      <pre><code>
+      dat-next sync
+      Syncing Dat Archive: /path/to/my-files-to-share
+      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+
+      Watching files for changes...
+      Total Size: 50 files (40.5 MB)
+
+      Looking for connections in Dat Network...
+      </code></pre>
+
+      <p>The <code>sync</code> command will also watch your directory for changes and share any updated files.</p>
+
+      <h3>Downloading Files</h3>
+
+      <p>Once the files are shared somewhere, you can clone them to another location:</p>
+
+      <ul>
+      <li><code>dat clone dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151 download-folder</code> - Clones all the files from the shared Dat archive.</li>
+      </ul>
+
+      <pre><code>
+      dat clone dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151 download-folder
+      Cloning Dat Archive: /path/to/download-folder
+      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+
+      Metadata: [==================================================&gt;] 100%
+      Content:  [====================&gt;------------------------------] 41%
+      Total size: 50 files (40.5 MB)
+
+      1 peer on the Dat Network
+      Downloading: 5.6 MB/s
+      </code></pre>
+
+      <h4>Downloading Updates</h4>
+
+      <p>After you clone a Dat archive, you can update the files later:</p>
+
+      <ul>
+      <li><code>cd download-folder</code></li>
+      <li><code>dat pull</code> - download updates and exit</li>
+      </ul>
+
+      <pre><code>
+      dat pull
+      Pulling Dat Archive: /path/to/download-folder
+      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+
+
+      Download Finished!
+      Total size: 50 files (40.5 MB)
+      </code></pre>
+    </div>
+  </body>
+</html>
