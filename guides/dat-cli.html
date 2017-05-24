@@ -10,13 +10,13 @@
 
       <h1>Guide: Using Dat from the command-line</h1>
 
-      <p>The dat-next command line tool can be used to share, download, and sync files across many computers via the command line.</p>
+      <p>The dat command line tool can be used to share, download, and sync files across many computers via the command line.</p>
 
       <h3>Installation</h3>
 
       <p>Install via npm:</p>
 
-      <pre><code>npm install -g dat-next</code></pre>
+      <pre><code>npm install -g dat</code></pre>
 
       <p>You can make sure the install worked by running the <code>dat</code> command.
       The usage guide should print.</p>
@@ -30,16 +30,19 @@
       <li><code>dat create</code> - create a Dat archive and import the files from the folder</li>
       </ul>
 
+
       <pre><code>
       dat create
-      Dat Archive initialized: /path/to/my-files-to-share
-      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+      Created empty Dat in /my-files-to-share/.dat
 
-      File import finished!
-      Total Size: 50 files (40.5 MB)
+      Now you can add files and share:
+      * Run dat share to create metadata and sync.
+      * Copy the unique dat link and securly share it.
+
+      dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
       </code></pre>
 
-      <p>Now you should have a <code>.dat</code> folder inside <code>my-files-to-share</code>. Once the dat is created, you can start sharing it over the p2p network:</p>
+      <p>Now you should have a <code>.dat</code> folder inside <code>my-files-to-share</code>and prompt you to create a dat.json file. Once the dat is created, you can start sharing it over the p2p network:</p>
 
       <ul>
       <li><code>dat sync</code> - share the files over the Dat network</li>
@@ -47,13 +50,16 @@
 
       <pre><code>
       dat sync
-      Syncing Dat Archive: /path/to/my-files-to-share
-      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+      dat://475bf027891654ef3ee9b725ac77f08aa1aa3722cc36f4bac4bdd9c12a7dbc16
+      Sharing dat: 17 files (54 MB)
 
-      Watching files for changes...
-      Total Size: 50 files (40.5 MB)
+      0 connections | Download 0 B/s Upload 0 B/s
 
-      Looking for connections in Dat Network...
+      Creating metadata for 60 files (223 MB/s)
+      [====================----------------------] 50%
+      ADD: data-gov-metadata/children-meta.json.gz (1.2 GB / 2.1 GB)
+
+      Ctrl+C to Exit
       </code></pre>
 
       <p>The <code>sync</code> command will also watch your directory for changes and share any updated files.</p>
@@ -68,15 +74,15 @@
 
       <pre><code>
       dat clone dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151 download-folder
-      Cloning Dat Archive: /path/to/download-folder
-      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+      Created new dat in /download-folder/.dat
+      Cloning: 131 files (2.5 GB)
 
-      Metadata: [==================================================&gt;] 100%
-      Content:  [====================&gt;------------------------------] 41%
-      Total size: 50 files (40.5 MB)
+      1 connection | Download 70 MB/s Upload 0 B/s
 
-      1 peer on the Dat Network
-      Downloading: 5.6 MB/s
+      Downloading updates...
+      [=====-------------------------------------] 13.81%
+
+      Ctrl+C to Exit
       </code></pre>
 
       <h4>Downloading Updates</h4>
@@ -90,12 +96,14 @@
 
       <pre><code>
       dat pull
-      Pulling Dat Archive: /path/to/download-folder
-      Link: dat://56c1977328c94c988137c9ff3cbeaab217d765772299840e7be7172b18dbb151
+      Downloading dat: 138 files (2.8 GB)
 
+      0 connections | Download 608 KB/s Upload 0 B/s
 
-      Download Finished!
-      Total size: 50 files (40.5 MB)
+      Downloading updates...
+      [==========--------------------------------] 24.05%
+
+      Ctrl+C to Exit
       </code></pre>
     </div>
   </body>
