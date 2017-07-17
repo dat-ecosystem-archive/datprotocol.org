@@ -24,6 +24,9 @@
         <h3><a href="/spec.html">Dat Specification</a></h3>
         <p><em>Draft, in progress</em>. A complete specification of the Dat protocol.</p>
 
+        <h3><a href="https://github.com/datproject/docs/blob/master/papers/dat-paper.pdf">Dat Whitepaper</a></h3>
+        <p><em>May, 2017</em>. A whitepaper on Dat.</p>
+
         <h3><a href="/guides/dat-cli.html">Guide: Using Dat from the command-line</a></h3>
         <p>How to create and download Dats using the shell.</p>
 
@@ -46,8 +49,8 @@
       <h2>About</h2>
       <div>
         <p>
-          Dat uses <a href="https://en.wikipedia.org/wiki/Rabin_fingerprint">rabin file-chunking<a/> and append-only feeds verified by <a href="https://en.wikipedia.org/wiki/Merkle_tree">merkle trees</a> to securely distribute mutable files with "live" update-pushing through a peer-to-peer network.
-          Peers are discovered using multiple overlapping networks (DHT, DNS, mUDP) and contacted via TCP or UTP.
+          Dat uses append-only feeds verified by <a href="https://en.wikipedia.org/wiki/Merkle_tree">merkle trees</a> to securely distribute mutable files with "live" update-pushing through a peer-to-peer network.
+          Peers are discovered using multiple overlapping networks (DHT, DNS, mUDP) and data transfered via encrypted TCP or UTP connections.
         </p>
         <p>
           Archives are identified by <a href="https://ed25519.cr.yp.to/">ed25519 public-keys</a> or sha256 hashes encoded as 64-character hex strings, making the URLs hostless and globally unique.
@@ -71,19 +74,18 @@
       <p>There are many submodules which comprise Dat:</p>
       <ul>
         <li>Cryptography<ul>
-          <li><a href="https://github.com/datproject/rabin">Rabin</a>: Node native addon module (C/C++) for Rabin fingerprinting data streams.</li>
+          <li><a href="https://github.com/sodium-friends/sodium-universal">Sodium-universal</a>: Universal wrapper for libsodium working in Node.js and the Browser.</li>
           <li><a href="https://github.com/mafintosh/merkle-tree-stream">Merkle-tree-stream</a>: A stream that generates a merkle tree based on the incoming data.</li>
           <li><a href="https://github.com/mafintosh/sodium-signatures">Sodium-signatures</a>: Sodium keypair sign/verify operations.</li>
         </ul></li>
         <li>Encoding<ul>
-          <li><a href="https://github.com/juliangruber/hyperdrive-encoding">Hyperdrive-encoding</a>: The message encoding and schemas used by hyperdrive.</li>
           <li><a href="https://github.com/mafintosh/bitfield-rle">Bitfield-rle</a>: A run-length-encoder that compresses bitfields.</li>
-          <li><a href="https://github.com/mafintosh/flat-tree">Flat-tree</a>: A series of functions to map a binary tree to a list.</li>
+          <li><a href="https://github.com/mafintosh/append-tree">Append-tree</a>: Model a tree structure on top of an append-only log.</li>
           <li><a href="https://github.com/mafintosh/protocol-buffers">Protocol-buffers</a>: Protocol Buffers for Node.js</li>
           <li><a href="https://github.com/mafintosh/uint64be">Uint64be</a>: Encode / decode big endian unsigned 64 bit integers</li>
         </ul></li>
         <li>Networking<ul>
-          <li><a href="https://github.com/mafintosh/discovery-swarm">Discovery-Swarm</a>: Uses the Mainline DHT, DNS Servers, and Multicast UDP to discover peers, and then establishes connections using TCP and UTP.</li> 
+          <li><a href="https://github.com/mafintosh/discovery-swarm">Discovery-Swarm</a>: Uses the Mainline DHT, DNS Servers, and Multicast UDP to discover peers, and then establishes connections using TCP and UTP.</li>
           <li><a href="https://github.com/mafintosh/hypercore-protocol">Hypercore-protocol</a>: A stream that implements the hypercore network protocol.</li>
           <li><a href="https://github.com/mafintosh/utp-native">Utp-native</a>: Native bindings for libutp.</li>
           <li><a href="https://github.com/maxogden/discovery-channel">Discovery-channel</a>: Search for a key across multiple discovery networks and find peers who answer.</li>
@@ -94,9 +96,10 @@
       <p>There are also some handy community or high-level modules for handling common Dat tasks:</p>
       <ul>
         <li><a href="https://github.com/joehand/hyperdrive-http">Hyperdrive-http</a>: Serve a Dat archive over HTTP.</li>
-        <li><a href="https://github.com/juliangruber/hyperdrive-stats">Hyperdrive-stats</a>: Live &amp; persistent stats module for Dat.</li>
-        <li><a href="https://github.com/joehand/hyperdrive-network-speed">Hyperdrive-network-speed</a>: Track upload and download speed on a Dat archive.
+        <li><a href="https://github.com/juliangruber/hypercore-index">Hypercore-index</a>:Linear asynchronous stateful indexing of a hypercore feed.</li>
+        <li><a href="https://github.com/joehand/hyperdrive-network-speed">Hyperdrive-network-speed</a>: Track upload and download speed on a Dat archive.</li>
         <li><a href="https://github.com/juliangruber/hyperdrive-import-files">Hyperdrive-import-files</a>: Import the contents of a folder into a Dat, and optionally keep watching for changes.</li>
+        <li><a href="https://github.com/mafintosh/mirror-folder">Mirror-folder</a>: Mirror a folder to another folder or fs, including hyperdrive. Supports live mode.</li>
         <li><a href="https://github.com/karissa/zip-to-hyperdrive">Zip-to-hyperdrive</a>: Import a .Zip into a Dat archive.</li>
         <li><a href="https://github.com/joehand/tar-dat">Tar-dat</a>: Import a .Tar into a Dat archive.</li>
         <li><a href="https://github.com/pfrazee/hyperdrive-to-zip-stream">Hyperdrive-to-zip-stream</a>: Export a Dat archive into a Zip file.</li>
