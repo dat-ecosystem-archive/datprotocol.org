@@ -1,0 +1,30 @@
+{
+  "name": "datprotocol.com",
+  "version": "1.0.0",
+  "description": "Website for Dat Protocol",
+  "main": "",
+  "scripts": {
+    "update-DEPs": "git submodule init && git submodule update",
+    "build": "npm run update-DEPs && node scripts/build.js",
+    "start": "npm run build && serve build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datprotocol/website.git"
+  },
+  "keywords": [],
+  "author": "Dat Protocol WG",
+  "license": "",
+  "bugs": {
+    "url": "https://github.com/datprotocol/website/issues"
+  },
+  "homepage": "https://github.com/datprotocol/website#readme",
+  "dependencies": {
+    "marked": "^0.3.12",
+    "mkdirp": "^0.5.1",
+    "rimraf": "^2.6.2"
+  },
+  "devDependencies": {
+    "serve": "^6.4.9"
+  }
+}
