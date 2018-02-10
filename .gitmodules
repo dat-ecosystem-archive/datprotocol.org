@@ -1,0 +1,3 @@
+[submodule "DEPs"]
+	path = DEPs
+	url = git@github.com:datprotocol/DEPs.git
