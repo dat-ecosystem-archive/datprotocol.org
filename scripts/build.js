@@ -29,7 +29,7 @@ fs.readdir(inPath, function (err, list) {
 DEPs:
 
 ${depList.map(function (item) {
-  return `* [${item[0]}](${item[1]})`
+  return `* **[${item.status}]** [${item.title}](${item.link})`
 })}
   `.trim()
 
@@ -45,9 +45,10 @@ function createPage (dep) {
 
   var link = `/deps/${dep.replace('.md', '')}`
   var title = mdContent.split('\n')[1].split('Title:')[1].replace(/\*\*/g, '').trim()
+  var status = mdContent.match(/Status:(.*)\n/)[1].trim().split(' ')[0]
   var htmlContent = marked(mdContent)
 
-  depList.push([title, link])
+  depList.push({title, link, status})
   var html = template.replace('{source}', htmlContent).replace(/{title}/g, title)
   fs.mkdirSync(fileDir)
   fs.writeFileSync(outFile, html)
