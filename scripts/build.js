@@ -24,7 +24,7 @@ fs.readdir(inPath, function (err, list) {
   if (err) throw err
   list.filter(function (file) { return file.match(/.*\.md$/) }).map(createPage)
 
-  var title = 'DEP Index'
+  var title = 'Dat Enhancement Proposals (DEPs)'
   var mdContent = `
 DEPs:
 
