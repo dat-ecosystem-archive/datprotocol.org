@@ -30,7 +30,7 @@ DEPs:
 
 ${depList.map(function (item) {
   return `* **[${item.status}]** [${item.title}](${item.link})`
-})}
+}).join('\n')}
   `.trim()
 
   var html = template.replace('{source}', marked(mdContent)).replace(/{title}/g, title)
