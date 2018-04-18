@@ -4,7 +4,7 @@
   "description": "Website for Dat Protocol",
   "main": "",
   "scripts": {
-    "update-DEPs": "git submodule init && git submodule update",
+    "update-DEPs": "git clone https://github.com/datprotocol/DEPs.git",
     "build": "npm run update-DEPs && node scripts/build.js",
     "start": "npm run build && serve build"
   },
