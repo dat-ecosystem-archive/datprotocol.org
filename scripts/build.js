@@ -26,11 +26,17 @@ fs.readdir(inPath, function (err, list) {
 
   var title = 'Dat Enhancement Proposals (DEPs)'
   var mdContent = `
-DEPs:
+This page contains a series of "Dat Enhancement Proposal" (DEP) documents, part of the Dat Protocol development and standardization process.
+
+These documents might be interesting reading to anybody wanting to learn more about protocol nitty gritties or the consensus process, but the documentation at docs.datproject.org is specifically written with end-users and application developers in mind.
+
+### DEPs:
 
 ${depList.map(function (item) {
   return `* **[${item.status}]** [${item.title}](${item.link})`
 }).join('\n')}
+
+View [pre-draft DEPs](https://github.com/datprotocol/DEPs/pulls) on GitHub.
   `.trim()
 
   var html = template.replace('{source}', marked(mdContent)).replace(/{title}/g, title)
