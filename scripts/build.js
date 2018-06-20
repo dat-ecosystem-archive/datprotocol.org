@@ -71,7 +71,7 @@ function genExtensionsIndex (extensions) {
   var mdContent = `
 Extensions are additional message-types used in the Dat protocol's exchange between computers. They are used to add optional or experimental features to Dat.
 
-Each extension is identified by a token, such as "session-data" or "ping". Developers are free to create and use their own extensions, but should avoid conflicting with any existing tokens. Refer to this list to see which tokens are in use.
+Each extension is identified by a token, such as "session-data" or "ping". Developers are free to create and use their own extensions, but should avoid conflicting with any existing tokens. Refer to this list to see which tokens are in use. New extensions can be [proposed as DEPs](https://github.com/datprotocol/DEPs#the-process).
 
 This list includes the extensions which have been formally reviewed and accepted by the Dat Working Group.
 
