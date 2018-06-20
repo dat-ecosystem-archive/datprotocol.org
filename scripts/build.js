@@ -10,7 +10,7 @@ var inPath = path.join(__dirname, '..', 'DEPs', 'proposals')
 var template = fs.readFileSync(path.join(__dirname, '..', 'template.html'), 'utf-8')
 var outPath = path.join(__dirname, '..', 'build')
 var depPath = path.join(outPath, 'deps')
-var activeExtensionsPath = path.join(outPath, 'active-extensions')
+var extensionsPath = path.join(outPath, 'extensions')
 
 // Clear build dir
 rimraf.sync(outPath)
@@ -25,12 +25,14 @@ var depFilenames = fs.readdirSync(inPath)
 var depList = depFilenames.filter(function (filename) { return filename.match(/.*\.md$/) }).map(parseDep)
 
 // Read extensions
-var activeExtensions = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'active-extensions.json'), 'utf8'))
+var extensions = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'extensions.json'), 'utf8'))
 
 // Generate dynamic pages
 genDEPsIndex(depList)
-genExtensionsIndex(activeExtensions)
+genExtensionsIndex(extensions)
 depList.forEach(genDEPPage)
+
+console.log('Done!')
 
 function parseDep (filename) {
   var inFile = path.join(inPath, filename)
@@ -65,15 +67,15 @@ View [pre-draft DEPs](https://github.com/datprotocol/DEPs/pulls) on GitHub.
 }
 
 function genExtensionsIndex (extensions) {
-  var title = 'Official Dat extensions'
+  var title = 'Dat extensions'
   var mdContent = `
 Extensions are additional message-types used in the Dat protocol's exchange between computers. They are used to add optional or experimental features to Dat.
 
-Each extension is identified by a token, such as "session-data" or "ping". Developers are free to create and use their own extensions, but should avoid conflicting with any existing tokens. Refer to this list to see which tokens are officially in use.
+Each extension is identified by a token, such as "session-data" or "ping". Developers are free to create and use their own extensions, but should avoid conflicting with any existing tokens. Refer to this list to see which tokens are in use.
 
 This list includes the extensions which have been formally reviewed and accepted by the Dat Working Group.
 
-### Active Extensions:
+### Extensions:
 
 ${extensions.map(function (item) {
   return `* **\`${item.id}\`** [${item.dep}](/deps/${item.dep}/)`
@@ -82,8 +84,8 @@ ${extensions.map(function (item) {
   `.trim()
 
   var html = template.replace('{source}', marked(mdContent)).replace(/{title}/g, title)
-  fs.mkdirSync(activeExtensionsPath)
-  fs.writeFileSync(path.join(activeExtensionsPath, 'index.html'), html)
+  fs.mkdirSync(extensionsPath)
+  fs.writeFileSync(path.join(extensionsPath, 'index.html'), html)
 }
 
 function genDEPPage (dep) {
