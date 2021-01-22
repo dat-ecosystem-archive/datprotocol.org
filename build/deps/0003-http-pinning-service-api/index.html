@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+  <head>
+    <title>DEP-0003: HTTP Pinning Service API - Dat Protocol</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Dat Protocol</h1>
+      <h2>DEP-0003: HTTP Pinning Service API</h2>
+      <main>
+        <p>Title: <strong>DEP-0003: HTTP Pinning Service API</strong></p>
+<p>Short Name: <code>0003-http-pinning-service-api</code></p>
+<p>Type: Standard</p>
+<p>Status: Draft (as of 2018-04-18)</p>
+<p>Github PR: <a href="https://github.com/datprotocol/DEPs/pull/19">Draft</a></p>
+<p>Authors: Paul Frazee</p>
+<h1 id="summary">Summary</h1>
+<p>An HTTP API for adding and removing Dat data.</p>
+<h1 id="motivation">Motivation</h1>
+<p>Users frequently make use of &quot;pinning services&quot; to keep their Dat data online
+independently of their personal devices. By specifying a standard API for
+accessing pinning services, we can integrate interfaces for these services to
+Dat clients (including the Dat CLI and Beaker Browser). For example, in the Dat
+CLI, it will be possible to execute commands such as:</p>
+<pre><code>dat publish --name myarchive my-pinning-service.com
+</code></pre><h1 id="service-description-psa-document">Service description (PSA) document</h1>
+<p>Servers should host the PSA service-description document at <code>/.well-known/psa</code>.
+It may be fetched using a GET request. This document will fit the following schema:</p>
+<pre><code class="lang-json">{
+  &quot;PSA&quot;: 1,
+  &quot;title&quot;: &quot;My Pinning Service&quot;,
+  &quot;description&quot;: &quot;Keep your Dats online!&quot;,
+  &quot;links&quot;: [{
+    &quot;rel&quot;: &quot;https://archive.org/services/purl/purl/datprotocol/spec/pinning-service-account-api&quot;,
+    &quot;title&quot;: &quot;User accounts API&quot;,
+    &quot;href&quot;: &quot;/v1/accounts&quot;
+  }, {
+    &quot;rel&quot;: &quot;https://archive.org/services/purl/purl/datprotocol/spec/pinning-service-dats-api&quot;,
+    &quot;title&quot;: &quot;Dat pinning API&quot;,
+    &quot;href&quot;: &quot;/v1/dats&quot;
+  }]
+}
+</code></pre>
+<p>You can read more about the <a href="http://web.archive.org/web/20180418164539/https://github.com/beakerbrowser/beaker/wiki/PSA-Web-Service-Discovery-Protocol">PSA Service Discovery
+Protocol</a>.</p>
+<p>The PSA document must provide links to two API resources: the User Accounts
+API, and the Dat Pinning API. These resources should be indicated by the
+<code>https://archive.org/services/purl/purl/datprotocol/spec/pinning-service-account-api</code>
+and <code>https://archive.org/services/purl/purl/datprotocol/spec/pinning-service-dats-api</code>
+rel-types, respectively. (These rel-types will need to be updated
+with the final URLs for their specifications.) If either API is absent from
+the PSA document, the service will be rejected.</p>
+<h1 id="user-accounts-api">User accounts API</h1>
+<p>The user-accounts API should provide the following resources:</p>
+<pre><code>POST /login     Create a new session with an existing account.
+POST /logout    End a session.
+GET  /account   Get information about the account attached to the current session.
+</code></pre><h2 id="post-login">POST /login</h2>
+<p>Create a new session with an existing account.</p>
+<p>Request body (JSON). All fields required:</p>
+<pre><code>{
+  username: String
+  password: String
+}
+</code></pre><p>Handler should generate a session and return the identifier in the response.
+Response body (JSON):</p>
+<pre><code>{
+  sessionToken: String
+}
+</code></pre><h2 id="post-logout">POST /logout</h2>
+<p>End a session.</p>
+<p>Request should include <a href="#authentication">authentication header</a>.</p>
+<h2 id="get-account">GET /account</h2>
+<p>Get information about the account attached to the current session.</p>
+<p>Request should include <a href="#authentication">authentication header</a>.</p>
+<p>Response body (JSON):</p>
+<pre><code>{
+  username: String, the accounts username (required)
+  email: String, the accounts email (optional)
+  diskUsage: Number, how much disk space has the user&#39;s data taken? (optional)
+  diskQuota: Number, how much disk space can the user&#39;s data take? (optional)
+  updatedAt: Number, the Unix timestamp of the last time the user account was updated (optional)
+  createdAt: Number, the Unix timestamp of the last time the user account was updated (optional)
+}
+</code></pre><p>If <code>diskQuota</code> is not included or is set to 0, the service is acting as a &quot;registry&quot; and will not host the files.</p>
+<h1 id="dat-pinning-api">Dat pinning API</h1>
+<p>The dat pinning API should provide the following resources:</p>
+<pre><code>GET  /            List all Dat data pinned by this account.
+POST /add         Add a Dat to this account&#39;s list of pins.
+POST /remove      Remove a Dat from this account&#39;s list of pins.
+GET  /item/:key   Get information about a Dat in the account&#39;s list of pins.
+POST /item/:key   Update information about a Dat in the account&#39;s list of pins.
+</code></pre><h2 id="get-">GET /</h2>
+<p>List all Dat data pinned by this account.</p>
+<p>Request should include <a href="#authentication">authentication header</a>.</p>
+<p>Response body (JSON):</p>
+<pre><code>{
+  items: [{
+    url: String, dat url
+    name: String, optional shortname assigned by the user
+    title: String, optional title extracted from the dat&#39;s manifest file
+    description: String, optional description extracted from the dat&#39;s manifest file
+    additionalUrls: Array of Strings, optional list of URLs the dat can be accessed at
+  }]
+}
+</code></pre><h2 id="post-add">POST /add</h2>
+<p>Add a Dat to this account&#39;s list of pins.</p>
+<p>Request should include <a href="#authentication">authentication header</a>.
+Request body (JSON):</p>
+<pre><code>{
+  url: String, required url/key of the dat
+  name: String, optional shortname for the archive
+  domains: Array of Strings, optional list of domain-names the dat should be made available at
+}
+</code></pre><h2 id="post-remove">POST /remove</h2>
+<p>Remove a Dat from this account&#39;s list of pins.</p>
+<p>Request should include <a href="#authentication">authentication header</a>.
+Request body (JSON):</p>
+<pre><code>{
+  url: String, required url/key of the dat
+}
+</code></pre><h2 id="get-item-key">GET /item/:key</h2>
+<p>Get information about a Dat in the account&#39;s list of pins. Key must be the
+pubkey of the dat.</p>
+<p>Response body (JSON):</p>
+<pre><code>{
+  url: String, dat url
+  name: String, optional shortname assigned by the user
+  title: String, optional title extracted from the dat&#39;s manifest file
+  description: String, optional description extracted from the dat&#39;s manifest file
+  additionalUrls: Array of Strings, optional list of URLs the dat can be accessed at
+}
+</code></pre><h2 id="post-item-key">POST /item/:key</h2>
+<p>Update information about a Dat in the account&#39;s list of pins. Key must be the
+pubkey of the dat.</p>
+<p>Request body (JSON):</p>
+<pre><code>{
+  name: String, optional shortname for the archive
+  domains: Array of Strings, optional list of domain-names the dat should be made available at
+}
+</code></pre><h1 id="authentication">Authentication</h1>
+<p>Clients should use the <a href="#user-accounts-api">User accounts API</a> to fetch a
+session token from the service. This token should be included in the
+<code>Authentication</code> header using the <code>Bearer</code> scheme.</p>
+<h1 id="error-responses">Error responses</h1>
+<p>All error responses should respond with a JSON body which matches the
+following schema:</p>
+<pre><code>{
+  message: String
+}
+</code></pre><p>The content of <code>message</code> will be displayed to the user. It should explain the
+error and, if appropriate, give steps for solving the issue. Other fields may
+be included in the response.</p>
+<h1 id="rationale-and-alternatives">Rationale and alternatives</h1>
+<ul>
+<li>The motivations and drawbacks of the PSA Service Document are discussed
+<a href="http://web.archive.org/web/20180418164539/https://github.com/beakerbrowser/beaker/wiki/PSA-Web-Service-Discovery-Protocol#motivation">here</a>.
+Without a description format, it becomes difficult to handle user
+authentication. We would probably need to use the HTTP Basic scheme and remove
+any mechanisms for registering new accounts.</li>
+</ul>
+<h1 id="unresolved-questions">Unresolved questions</h1>
+<ul>
+<li>Does the registration flow need to be included in the spec?</li>
+</ul>
+<h1 id="changelog">Changelog</h1>
+<ul>
+<li>2018-03-31: First full draft of DEP-0003 submitted for review.</li>
+<li>2018-04-18: DEP-0003 accepted as &quot;Draft&quot;</li>
+</ul>
+
+      </main>
+    </div>
+  </body>
+</html>

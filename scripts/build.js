@@ -16,9 +16,19 @@ var extensionsPath = path.join(outPath, 'extensions')
 rimraf.sync(outPath)
 mkdirp.sync(depPath)
 
+const indexHTML = path.join(__dirname, '..', 'index.html')
+const styleCSS = path.join(__dirname, '..', 'style.css')
+try {
+  fs.unlinkSync(indexHTML)
+  fs.unlinkSync(styleCSS)
+  //file removed
+} catch(err) {
+  console.error(err)
+}
+
 // Copy site files to build dir
-fs.writeFileSync(path.join(outPath, 'index.html'), fs.readFileSync(path.join(__dirname, '..', 'site', 'index.html')))
-fs.writeFileSync(path.join(outPath, 'style.css'), fs.readFileSync(path.join(__dirname, '..', 'site', 'style.css')))
+fs.writeFileSync(indexHTML, fs.readFileSync(path.join(__dirname, '..', 'site', 'index.html')))
+fs.writeFileSync(styleCSS, fs.readFileSync(path.join(__dirname, '..', 'site', 'style.css')))
 
 // Read DEPs directory
 var depFilenames = fs.readdirSync(inPath)

@@ -1,0 +1,19 @@
+body {
+  background: #eee;
+}
+.content {
+  max-width: 800px;
+  margin:0 auto;
+  padding: 10px 30px;
+  background: #fff;
+}
+table {
+  margin: 10px;
+}
+table th {
+  padding-right: 10px;
+  text-align: left;
+}
+section {
+  padding: 0 10px;
+}

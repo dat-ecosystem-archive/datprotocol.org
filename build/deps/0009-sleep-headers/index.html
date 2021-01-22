@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+  <head>
+    <title>DEP-0009: Hypercore SLEEP Headers - Dat Protocol</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Dat Protocol</h1>
+      <h2>DEP-0009: Hypercore SLEEP Headers</h2>
+      <main>
+        <p>Title: DEP-0009: Hypercore SLEEP Headers</p>
+<p>Short Name: <code>0009-sleep-headers</code></p>
+<p>Type: Standard</p>
+<p>Status: Draft (as of 2019-01-16)</p>
+<p>Github PR: <a href="https://github.com/datprotocol/DEPs/pull/56">https://github.com/datprotocol/DEPs/pull/56</a></p>
+<p>Authors: Yoshua Wuyts <a href="mailto:&#121;&#111;&#115;&#104;&#117;&#x61;&#x77;&#x75;&#121;&#116;&#115;&#64;&#x67;&#109;&#x61;&#x69;&#108;&#x2e;&#x63;&#x6f;&#109;">&#121;&#111;&#115;&#104;&#117;&#x61;&#x77;&#x75;&#121;&#116;&#115;&#64;&#x67;&#109;&#x61;&#x69;&#108;&#x2e;&#x63;&#x6f;&#109;</a></p>
+<h1 id="summary">Summary</h1>
+<p>This documents the SLEEP headers that are part of Hypercore protocol.</p>
+<h1 id="motivation">Motivation</h1>
+<p>SLEEP headers in the Hypercore protocol contain metadata explaining how a feed
+is constructed, and how to interpret the data in it.</p>
+<p>These headers have been described from a high-level in the past, but have always
+left some room for interpretation. This DEP creates a specification on how to
+construct and parse Hypercore SLEEP headers.</p>
+<h1 id="usage-documentation">Usage Documentation</h1>
+<p>The acronym SLEEP is a slumber related pun on REST and stands for Syncable
+Ledger of Exact Events Protocol. The Syncable part refers to how SLEEP files are
+append-only in nature, meaning they grow over time and new updates can be
+subscribed to as a realtime feed of events through Hypercore.</p>
+<p>SLEEP files are split up into a Header and a Body part. This DEP only concerns
+itself with the SLEEP headers.</p>
+<p>SLEEP headers are located at the start of files. They contain metadata about the
+rest of the file, such as how they’re formatted, which algorithms they use, and
+how large the individual entries are. Not each file in a SLEEP archive has a
+Hypercore header.</p>
+<p>Hypercore files with SLEEP headers are:</p>
+<ul>
+<li>bitfield</li>
+<li>signatures</li>
+<li>(Merkle) tree</li>
+</ul>
+<p>Hypercore files without SLEEP headers are:</p>
+<ul>
+<li>public key</li>
+<li>secret key</li>
+</ul>
+<h1 id="reference-documentation">Reference Documentation</h1>
+<h2 id="header-layout">Header Layout</h2>
+<p>Each SLEEP header is 32 bytes. Different file types have different header
+configurations. This section describes the shared layout of the headers.</p>
+<pre><code>&lt;32 byte header&gt;
+  &lt;3 byte magic string: 0x050257&gt;
+  &lt;1 byte header type&gt;
+  &lt;1 byte version number: 0&gt;
+  &lt;2 byte entry size&gt;
+  &lt;1 byte algorithm name length prefix&gt;
+  &lt;variable byte algorithm name&gt;
+  &lt;variable byte padding&gt;
+</code></pre><h3 id="3-byte-magic-string">3 byte magic string</h3>
+<p>The first 3 bytes in the header are “magic bytes” that serve to identify files
+as SLEEP formatted. These numbers correspond to Mathias Buus’s birthday in hex
+notation (05/02/87).</p>
+<h3 id="1-byte-header-type">1 byte header type</h3>
+<p>The 4th byte determines what kind of header file this is. Currently 3 header
+types supported:</p>
+<ul>
+<li>bitfield (<code>0x00</code>)</li>
+<li>signatures (<code>0x01</code>)</li>
+<li>(Merkle) tree (<code>0x02</code>).</li>
+</ul>
+<h3 id="1-byte-version-number">1 byte version number</h3>
+<p>The 5th byte is used to determine the protocol version. Currently only one
+version of the protocol exists, so this number is always set to <code>0x00</code>.</p>
+<h3 id="2-byte-entry-size-u16be-">2 byte entry size (u16BE)</h3>
+<p>Each entry in the SLEEP file’s body has a fixed size. The size of these entries
+is determined by the entry size value. This value has to be read as a 16-bit
+Big-Endian value.</p>
+<h3 id="1-byte-algorithm-name-prefix">1 byte algorithm name prefix</h3>
+<p>SLEEP files can be encoded using different algorithms. The algorithm names are
+encoded as strings, and not as numbers. The 1 byte algorithm name prefix exists
+to signal how long the algorithm name string will be.</p>
+<h3 id="variable-byte-algorithm-name">variable byte algorithm name</h3>
+<p>The algorithm name determines how SLEEP files are encoded. The length of the
+algorithm name is variable length, and encoded as the 1 byte algorithm name
+prefix.</p>
+<p>Currently 3 possible variants exist:</p>
+<ul>
+<li><code>BLAKE2b</code> (7 bytes)</li>
+<li><code>Ed25519</code> (7 bytes)</li>
+<li>None (0 bytes)</li>
+</ul>
+<h3 id="variable-byte-padding">variable byte padding</h3>
+<p>Each SLEEP header should be a total of 32 bytes. If there is not enough data to
+fill 32 bytes, the remainder of the header should be filled with zeroes
+(<code>0x00</code>).</p>
+<p>However, for forward compatibility reasons, parsers should not expect that the
+remainder of the header is filled with zeroes. As long as the protocol version
+is understood by the parser, it should be safe to ignore the remainder of the
+data in the header, regardless of its encoding.</p>
+<h2 id="bitfield-layout">Bitfield Layout</h2>
+<p>This describes the header layout of SLEEP headers in the bitfield configuration</p>
+<pre><code>&lt;32 byte header&gt;
+  &lt;3 byte magic string: 0x050257&gt;
+  &lt;1 byte header type: 0x00&gt;
+  &lt;1 byte version number: 0&gt;
+  &lt;2 byte entry size: 3328&gt;
+  &lt;1 byte algorithm name length prefix: 0&gt;
+  &lt;0 byte algorithm name&gt;
+  &lt;24 byte padding&gt;
+</code></pre><h3 id="1-byte-header-type-0x00">1 byte header type: 0x00</h3>
+<p>Bitfields should have the header type of <code>0x00</code>.</p>
+<h3 id="2-byte-entry-size-u16be-3328">2 byte entry size (u16BE): 3328</h3>
+<p>Each entry in the bitfield’s body is <code>3328</code> bytes. This is the combined length
+of Hypercore’s 3 individual bitfields:</p>
+<ul>
+<li>data bitfield: <code>1024</code> bytes</li>
+<li>tree bitfield: <code>2048</code> bytes</li>
+<li>index bitfield: <code>256</code> bytes</li>
+</ul>
+<p>Together these add up to <code>3328</code>.</p>
+<h3 id="1-byte-algorithm-name-prefix-0">1 byte algorithm name prefix: 0</h3>
+<p>Bitfields make use of a Run-Length Encoding (RLE) algorithm to encode their
+contents. However this is only for compression purposes, and not included as
+part of the algorithm name.</p>
+<h3 id="variable-byte-algorithm-name">variable byte algorithm name</h3>
+<p>No algorithm name is provided.</p>
+<h3 id="variable-byte-padding-24">variable byte padding: 24</h3>
+<p><code>24</code> zeroes are appended to the end of the header to create a total of 32 bytes.</p>
+<h2 id="signatures-layout">Signatures Layout</h2>
+<p>This describes the header layout of SLEEP headers in the signatures
+configuration</p>
+<pre><code>&lt;32 byte header&gt;
+  &lt;3 byte magic string: 0x050257&gt;
+  &lt;1 byte header type: 0x01&gt;
+  &lt;1 byte version number: 0&gt;
+  &lt;2 byte entry size: 64&gt;
+  &lt;1 byte algorithm name length prefix: 7&gt;
+  &lt;7 byte algorithm name: Ed25519&gt;
+  &lt;21 byte padding&gt;
+</code></pre><h3 id="1-byte-header-type-0x01">1 byte header type: 0x01</h3>
+<p>Signatures should have the header type of <code>0x01</code>.</p>
+<h3 id="2-byte-entry-size-u16be-64">2 byte entry size (u16BE): 64</h3>
+<p>Each signature in the signatures file is <code>64</code> bytes.</p>
+<h3 id="1-byte-algorithm-name-prefix-7">1 byte algorithm name prefix: 7</h3>
+<p>The string <code>Ed25519</code> is 7 characters long.</p>
+<h3 id="variable-byte-algorithm-name-ed25519">variable byte algorithm name: Ed25519</h3>
+<p>Signatures are created using the <code>Ed25519</code> encryption scheme.</p>
+<h3 id="variable-byte-padding-21">variable byte padding: 21</h3>
+<p><code>21</code> zeroes are appended to the end of the header to create a total of 32 bytes.</p>
+<h2 id="merkle-tree-layout">Merkle Tree Layout</h2>
+<p>This describes the header layout of SLEEP headers in the tree configuration</p>
+<pre><code>&lt;32 byte header&gt;
+  &lt;3 byte magic string: 0x050257&gt;
+  &lt;1 byte header type: 0x02&gt;
+  &lt;1 byte version number: 0&gt;
+  &lt;2 byte entry size: 40&gt;
+  &lt;1 byte algorithm name length prefix: 7&gt;
+  &lt;7 byte algorithm name: BLAKE2b&gt;
+  &lt;21 byte padding&gt;
+</code></pre><h3 id="1-byte-header-type-0x02">1 byte header type: 0x02</h3>
+<p>Merkle Trees should have the header type of <code>0x02</code>.</p>
+<h3 id="2-byte-entry-size-u16be-40">2 byte entry size (u16BE): 40</h3>
+<p>Each entry in the tree file is <code>40</code> bytes. The first 32 bytes is the hash. The
+next 8 bytes is the byte size of the spanning tree.</p>
+<h3 id="1-byte-algorithm-name-prefix-7">1 byte algorithm name prefix: 7</h3>
+<p>The string <code>BLAKE2b</code> is 7 characters long.</p>
+<h3 id="variable-byte-algorithm-name-blake2b">variable byte algorithm name: BLAKE2b</h3>
+<p>Merkle Tree entries are created using the <code>BLAKE2b</code> hashing scheme.</p>
+<h3 id="variable-byte-padding-21">variable byte padding: 21</h3>
+<p><code>21</code> zeroes are appended to the end of the header to create a total of 32 bytes.</p>
+<h1 id="drawbacks">Drawbacks</h1>
+<p>None.</p>
+<h1 id="rationale-and-alternatives">Rationale and alternatives</h1>
+<h2 id="fail-parsing-if-padding-contains-anything-other-than-zeros">Fail parsing if padding contains anything other than zeros</h2>
+<p>Parsers could choose to fail parsing if anything other than zeros was used to
+pad the end of the header. However, this would break forward compatibility with
+any header extensions.</p>
+<p>Because the header has a versioning field, any non-backward compatible changes
+to the header should result in a version increase. So as long as header versions
+line up, any additions to the header should be additive, and not break the
+existing parsing.</p>
+<h1 id="unresolved-questions">Unresolved questions</h1>
+<ul>
+<li>There should be a follow-up DEP to specify the body portion of SLEEP files.</li>
+</ul>
+<h1 id="changelog">Changelog</h1>
+<p>A brief statement about current status can go here, follow by a list of dates
+when the status line of this DEP changed (in most-recent-last order).</p>
+<ul>
+<li>2018-12-28: First complete draft submitted for review</li>
+</ul>
+
+      </main>
+    </div>
+  </body>
+</html>
