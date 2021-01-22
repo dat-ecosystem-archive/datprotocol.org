@@ -8,11 +8,11 @@ var rimraf = require('rimraf')
 
 var inPath = path.join(__dirname, '..', 'DEPs', 'proposals')
 var template = fs.readFileSync(path.join(__dirname, '..', 'template.html'), 'utf-8')
-var outPath = path.join(__dirname, '..', 'build')
+var outPath = path.join(__dirname, '..', 'page')
 var depPath = path.join(outPath, 'deps')
 var extensionsPath = path.join(outPath, 'extensions')
 
-// Clear build dir
+// Clear page dir
 rimraf.sync(outPath)
 mkdirp.sync(depPath)
 
@@ -26,7 +26,7 @@ try {
   console.error(err)
 }
 
-// Copy site files to build dir
+// Copy site files to page dir
 fs.writeFileSync(indexHTML, fs.readFileSync(path.join(__dirname, '..', 'site', 'index.html')))
 fs.writeFileSync(styleCSS, fs.readFileSync(path.join(__dirname, '..', 'site', 'style.css')))
 
@@ -69,7 +69,7 @@ ${depList.map(function (item) {
   return `* **[${item.status}]** [${item.title}](${item.link})`
 }).join('\n')}
 
-View [pre-draft DEPs](https://github.com/datprotocol/DEPs/pulls) on GitHub.
+View [pre-draft DEPs](https://github.com/dat-ecosystem/DEPs/pulls) on GitHub.
   `.trim()
 
   var html = template.replace('{source}', marked(mdContent)).replace(/{title}/g, title)
