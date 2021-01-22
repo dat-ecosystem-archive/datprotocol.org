@@ -1,7 +1,6 @@
 # Dat Protocol Website
 
-*[datprotocol.com](https://www.datprotocol.com)*
-
+*[datprotocol.com](https://dat-ecosystem.github.io/datprotocol.com/
 ## Development
 
 * `npm run build` - update DEPs and build site files

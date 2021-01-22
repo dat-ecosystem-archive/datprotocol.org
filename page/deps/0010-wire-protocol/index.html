@@ -18,7 +18,7 @@
 <h1 id="summary">Summary</h1>
 <p>This DEP describes the Hypercore wire protocol: a transport-agnostic message stream spoken between nodes in a swarm of hypercore network peers (including Dat clients). The wire protocol includes mechanisms for framing, stream encryption, and feed key authentication.</p>
 <h1 id="motivation">Motivation</h1>
-<p>The protocol described here is already in use as of 2017 (by Hypercore, Dat, and Beaker Browser users), and was partially described in an earlier <a href="https://github.com/datprotocol/whitepaper">whitepaper</a>. This document fills in some additional details.</p>
+<p>The protocol described here is already in use as of 2017 (by Hypercore, Dat, and Beaker Browser users), and was partially described in an earlier <a href="https://github.com/dat-ecosystem/whitepaper">whitepaper</a>. This document fills in some additional details.</p>
 <h1 id="stream-connections">Stream Connections</h1>
 <p>The Dat wire protocol depends on the use of a binary transport protocol which provides the following semantics:</p>
 <ul>
@@ -268,7 +268,7 @@ ALICE: closes connection
 <p>The wire protocol encryption provides message <em>secrecy</em> (from parties who do not have the public key), but does not guarantee any form of <em>authenticity</em>. In the case of Dat and hypercore, the application layer itself verifies authenticity of transferred content using hashes and signatures. However, implementors should note that network agents who can manipulate traffic can modify data in flight without detection, regardless of whether they have the feed public key. However, peers are already not trusted parties, and thus implementors must already take care to treat protocol messages as potentially hostile input.</p>
 <p>The issues of observer decryption and message authenticity may be addressed in a future revision of the wire protocol.</p>
 <h1 id="references">References</h1>
-<p>&quot;Dat - Distributed Dataset Synchronization And Versioning&quot; by Maxwell Ogden, Karissa McKelvey, and Mathias Buus Madsen. Whitepaper, May 2017 (<a href="https://datproject.org/paper">pdf</a>).</p>
+<p>&quot;Dat - Distributed Dataset Synchronization And Versioning&quot; by Maxwell Ogden, Karissa McKelvey, and Mathias Buus Madsen. Whitepaper, May 2017 (<a href="https://github.com/dat-ecosystem/whitepaper">pdf</a>).</p>
 <p>&quot;The BitTorrent Protocol Specification (BEP #3)&quot;, by Bram Cohen. January 2008 (<a href="http://www.bittorrent.org/beps/bep_0003.html">html</a>)</p>
 <p>&quot;uTorrent transport protocol (BEP #29)&quot;, by Arvid Norberg. June 2009 (<a href="http://www.bittorrent.org/beps/bep_0029.html">html</a>)</p>
 <p>&quot;Merkle hash torrent extension (BEP #30)&quot;, by Arno Bakker. May 2009. (<a href="http://www.bittorrent.org/beps/bep_0030.html">html</a>)</p>

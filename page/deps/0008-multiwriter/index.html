@@ -87,7 +87,7 @@ opposed to &quot;State-based&quot;) CRDT.</p>
 <h2 id="core-api">Core API</h2>
 <p>A &quot;node&quot; is a data structure representing a database entry, including the
 <code>key</code>, <code>value</code>, and feed that the entry is committed to.</p>
-<p><code>db.get(key)</code> (as described in the <a href="https://github.com/datprotocol/DEPs/blob/master/proposals/0004-hyperdb.md">hyperdb DEP</a>)
+<p><code>db.get(key)</code> (as described in the <a href="https://github.com/dat-ecosystem/DEPs/blob/master/proposals/0004-hyperdb.md">hyperdb DEP</a>)
 returns an array of nodes. If it is unambiguous what the consistent state of a
 key is, the array will have only that one value. If there is a conflict
 (ambiguity), multiple nodes will be returned. If a key has unambiguously been

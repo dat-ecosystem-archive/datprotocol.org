@@ -6,7 +6,7 @@
   "scripts": {
     "update-DEPs": "rm -rf ./DEPs && git clone https://github.com/dat-ecosystem/DEPs.git",
     "build": "npm run update-DEPs && node scripts/build.js",
-    "start": "npm run build && serve build"
+    "start": "npm run build && serve ."
   },
   "repository": {
     "type": "git",
