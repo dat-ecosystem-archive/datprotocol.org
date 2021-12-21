@@ -1,0 +1,419 @@
+<!doctype html>
+<html>
+  <head>
+    <title>DEP-0008: Multi-Writer - Dat Protocol</title>
+    <link rel="stylesheet" href="../../static/style.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Dat Protocol</h1>
+      <h2>DEP-0008: Multi-Writer</h2>
+      <main>
+        <p>Title: <strong>DEP-0008: Multi-Writer</strong></p>
+<p>Short Name: <code>0008-multiwriter</code></p>
+<p>Type: Standard</p>
+<p>Status: Draft (as of 2018-07-06)</p>
+<p>Github PR: <a href="https://github.com/datprotocol/DEPs/pull/10">Draft</a></p>
+<p>Authors:
+<a href="https://github.com/bnewbold">Bryan Newbold</a>,
+<a href="https://github.com/noffle">Stephen Whitmore</a>,
+<a href="https://github.com/mafintosh">Mathias Buus</a></p>
+<h1 id="summary">Summary</h1>
+<p>Multi-Writer is a set of schema, API, and feature extensions to allow multiple
+agents (users, devices, or software) to write to the same hyperdb database. By
+building on top of this abstraction layer, future versions of hyperdrive and
+Dat will gain these features.</p>
+<p>Mechanisms for distributed consistency and granting trust are specified here;
+the need for merge conflict algorithms and secure key distribution are
+mentioned but specific solutions are not specified.</p>
+<p>This DEP forms the second half of the hyperdb specification; the first half
+covered only the key/value database aspects of hyperdb.</p>
+<h1 id="motivation">Motivation</h1>
+<p>The current hypercore/Dat ecosystem currently lacks solutions for two
+fundamental use cases:</p>
+<ul>
+<li>individual users should be able to modify distributed archives under their
+control from multiple devices, at a minimum to prevent loss of control of
+content if a single device (containing secret keys) is lost</li>
+<li>contributions from and collaboration between multiple users on a single
+archive or database should be possible, with appropriate trust and access
+control semantics</li>
+</ul>
+<p>Access to a single secret key is currently required to make any change to a
+hypercore feed, and it is broadly considered best practice not to distribute
+secret keys between multiple users or multiple devices. In fact, the current
+hypercore implementation has no mechanism to resolve disputes or recover if
+multiple agents used the same secret key to append to the same feed.</p>
+<p>Solutions to these two use cases are seen as essential for many current and
+future Dat ecosystem applications.</p>
+<h1 id="concepts-behavior-and-usage">Concepts, Behavior, and Usage</h1>
+<p>The multi-writer features of hyperdb are implemented by storing and replicating
+the contributions of each writer in a separate hypercore feed. This
+specification concerns itself with the details of how changes from multiple
+feeds (which may be written and replicated concurrently or asynchronously) are
+securely combined to present a unified key/value interface.</p>
+<p>The following related concerns are explicitly left to application developers to
+design and implement:</p>
+<ul>
+<li>secure key distribution and authentication (eg, if a friend should be given
+write access to a hyperdb database, how is that friend&#39;s feed key found and
+verified?)</li>
+<li>merge conflict resolution (using the provided API), potentially using
+application-layer semantics</li>
+</ul>
+<p>Before we go any further, a few definitions:</p>
+<p><em>Feed</em>: A hypercore feed: an append-only log of <em>Entries</em>, which can be
+arbitrary data blobs.</p>
+<p><em>Database</em>: in this context, a Hyperdb key/value database. Built from several
+Feeds (two Feeds per Writer).</p>
+<p><em>Writer</em>: a user (or user controlled device or software agent) that has a
+distinct feed with a public/private key pair, and thus the ability to append
+hypercore entries and &quot;write&quot; changes to their version of the database.</p>
+<p><em>Original Writer</em>: the writer who created a given hyperdb database in the form
+of the <em>Original Feed</em>. The public key of the original feed is the one used to
+reference the database as a collection of feeds (eg, for the purpose of
+discovery).</p>
+<p>At a high level, multi-writer hyperdb works by having existing authorized
+writers (starting with the original writer) include authorization of new
+writers by appending metadata to their own feed which points to the new feeds
+(by public key). Each entry in each writer&#39;s feed contains &quot;clock&quot; metadata
+that records the known state of the entire database (all writers) seen from the
+perspective of that writer at the time they created the entry, in the form of
+&quot;clock&quot; version pointers. This metadata (a &quot;<a href="https://en.wikipedia.org/wiki/Vector_clock">vector clock</a>&quot;) can be used by
+other writers to resolve (or at least identify) conflicting content in the
+database. The technical term for this type of system is a &quot;Conflict-free
+replicated data type&quot; (<a href="https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type">CRDT</a>), and specifically an &quot;Operation-based&quot; (as
+opposed to &quot;State-based&quot;) CRDT.</p>
+<h2 id="core-api">Core API</h2>
+<p>A &quot;node&quot; is a data structure representing a database entry, including the
+<code>key</code>, <code>value</code>, and feed that the entry is committed to.</p>
+<p><code>db.get(key)</code> (as described in the <a href="https://github.com/dat-ecosystem/DEPs/blob/master/proposals/0004-hyperdb.md">hyperdb DEP</a>)
+returns an array of nodes. If it is unambiguous what the consistent state of a
+key is, the array will have only that one value. If there is a conflict
+(ambiguity), multiple nodes will be returned. If a key has unambiguously been
+removed from the database, a &quot;null&quot; or empty datatype is returned. If one
+branch of a conflict has a deletion (but at least one of the others does not),
+a node with the <code>deleted</code> flag will be returned; note that such &quot;tombstone&quot;
+nodes can still have a <code>value</code> field, which may contain application-specific
+metadata (such as a self-reported timestamp), which may help resolve the
+conflict.</p>
+<p>If multiple nodes are returned from a <code>get</code>, the writer should attempt to merge
+the values (or chose one over the other) and write the result to the database
+with <code>db.put(key, value)</code>. Client libraries can make this process more
+ergonomic by accepting a helper function to select between multiple nodes.
+Libraries can also offer an option to either directly return the value of a
+single node (instead of the node itself), or raise an error; this is likely to
+be more ergonomic for applications which do not intend to support multiple
+writers per database.</p>
+<p><code>db.authorize(key)</code> will write metadata to the local feed authorizing the new
+feed (corresponding to <code>key</code>) to be included in the database. Once authorized,
+a feed may further authorize additional feeds (recursively).</p>
+<p><code>db.authorized(key)</code> (returning a boolean) indicates whether the given <code>key</code> is
+an authorized writer to the hyperdb database.</p>
+<p>At the time of this DEP there is no mechanism for revoking authorization.</p>
+<h2 id="scaling">Scaling</h2>
+<p>There is some overhead associated with each &quot;writer&quot; added to the feed,
+impacting the number of files on disk, memory use, and the computational cost
+of some lookup operations. The design should easily accommodate dozens of
+writers, and should scale to 1,000 writers without too much additional
+overhead. Note that a large number of writers also implies a larger number and
+rate of append operations, and additional network connections, which may cause
+scaling issues on their own. More real-world experience and benchmarking is
+needed in this area.</p>
+<h1 id="implementation-details">Implementation Details</h1>
+<p>The complete protobuf schemas for the hyperdb &quot;Entry&quot; and &quot;InflatedEntry&quot;
+message types (as specified in the hyperdb DEP) are:</p>
+<pre><code>message Entry {
+  required string key = 1;
+  optional bytes value = 2;
+  optional bool deleted = 3;
+  required bytes trie = 4;
+  repeated uint64 clock = 5;
+  optional uint64 inflate = 6;
+}
+
+message InflatedEntry {
+  message Feed {
+    required bytes key = 1;
+  }
+
+  required string key = 1;
+  optional bytes value = 2;
+  optional bool deleted = 3;
+  required bytes trie = 4;
+  repeated uint64 clock = 5;
+  optional uint64 inflate = 6;
+  repeated Feed feeds = 7;
+  optional bytes contentFeed = 8;
+}
+</code></pre><p>The fields of interest for multi-writer are:</p>
+<ul>
+<li><code>clock</code>: a &quot;vector clock&quot; to record observed state at the time of writing the
+entry. Included in every Entry and InflatedEntry.</li>
+<li><code>inflate</code>: a back-pointer to the entry index of the most recent InflatedEntry
+(containing a feed metadata change). Included in every Entry and
+InflatedEntry. Should not be included for the very first entry in a feed
+(which is an InflatedEntry).</li>
+<li><code>feeds</code>: list of public keys for each writer&#39;s feed. Only included in
+InflatedEntry, and only when feeds have changed. Does include a
+self-reference to the current (local) Feed&#39;s key, always as the first
+element.</li>
+</ul>
+<p>When serialized on disk in a SLEEP directory:</p>
+<ul>
+<li><code>source/</code>: the original feed, as created or cloned by this writer</li>
+<li><code>local/</code>: if &quot;local&quot; feed is different from &quot;source&quot;, it goes here</li>
+<li><code>peers/&lt;discover-key&gt;/</code>: all other writers&#39; feed go under this directory (the
+discovery key is lower-case hex-encoded)</li>
+<li><code>content/&lt;discovery-key&gt;/</code>: if a higher-level protocol is being used that
+uses multiple linked hypercore feeds (eg, hyperdrive), the linked &quot;content&quot;
+feeds all go under this directory</li>
+</ul>
+<h2 id="feeds-and-vector-clocks">Feeds and Vector Clocks</h2>
+<p>At any point in time, each writer has a potentially unique view of the
+&quot;current&quot; state of the database as a whole; this is the nature of real-world
+distributed systems. For example, a given write might have the most recent
+appends from one peer (eg, only seconds old), but be missing much older appends
+from another (eg, days or weeks out of date). By having each writer include
+metadata about their perceived state of the system as a whole in operations to
+their Feed, all writers are able to collectively converge on an &quot;eventually
+consistent&quot; picture of the database as whole (this process will be described in
+the next section).</p>
+<p>A writer&#39;s &quot;current known state&quot; of the database consists of the set of active
+Feeds, and for each the most recent entry sequence number (&quot;version&quot;). This
+state can be serialized as an array of integers, referred to as a <a href="https://en.wikipedia.org/wiki/Vector_clock">vector
+clock</a>.</p>
+<p>Each <code>put()</code> operation on the database appends a node to the writer&#39;s <code>local</code>
+feed, and contains the writer&#39;s vector clock as observed at that time.
+<code>InflatedEntry</code> nodes also contain a list of all known authorized Feeds;
+inflated nodes only need to be written when the Feed list changes. Every
+non-inflated entry contains a pointer back to the most recent inflated entry;
+inflated entries themselves contain a pointer back to the previous inflated
+entry (the first inflated entry has a null pointer). Elements of a vector clock
+are ordered by the Feed list from the corresponding Inflated entry.</p>
+<p>By convention, the order of Feed lists is to start with the writer&#39;s local
+feed first, then proceed by the order in which Feeds were discovered. Note that
+this ordering is not consistent across writers, only within the same feed.</p>
+<p>As an example, if a node (non-inflated entry) had a vector clock of <code>[1, 3,
+6]</code>, that would mean:</p>
+<ul>
+<li>when this node was written, the largest seq # in the writer&#39;s local fed was 1</li>
+<li>when this node was written, the largest seq # in the second known feed was 3</li>
+<li>when this node was written, the largest seq # in the third known feed was 6</li>
+</ul>
+<h2 id="multi-feed-aware-hyperdb">Multi-Feed Aware hyperdb</h2>
+<p>The <a href="hyperdb-dep">hyperdb DEP</a> specifies the procedures for lookup (<code>get()</code>)
+and append (<code>put()</code>) operations to the database, as well as binary encoding
+schemes for entry messages.</p>
+<p>Note that the trie encoding specifies pointers in a <code>(feed, entry)</code> pair
+format. The <code>feed</code> integer is an index into the most recent Feed list (found in
+the most recent inflated entry; see the last section). When working with a
+multi-writer hyperdb database, simply look up entries in the appropriate feed,
+instead of only looking in the current feed. The next section (&quot;Consistent
+History&quot;) describes which entry (or entries) to start with instead of simply
+assuming the most recent entry from the local feed.</p>
+<h2 id="consistent-history">Consistent History</h2>
+<p>The set of all appended nodes in all feeds of a hyperdb, and all the vector
+clock pointers between them, forms a &quot;directed acyclic graph&quot; (DAG). Any node
+which does not have another node pointing to it is called a &quot;head&quot; (this
+terminology is similar to that used in git). At any point in time, an observed
+copy of a database has one or more heads, each representing the top of a
+tree-like graph. In the trivial case of a non-multi-writer hyperdb, there is
+always only a single head: the most recent entry in the local feed. Just after
+appending to the local feed, there is also always a single head, because that
+node&#39;s vector clock will reference all know most recent entries from other
+feeds. It is only when nodes are appended by separate writers who did not know
+of the others&#39; concurrent action (and then these changes are replicated) that
+there are multiple heads.</p>
+<p>When operating on the database (eg, executing a <code>get()</code> operation), all heads
+must be considered. The lookup procedure documented in the <a href="hyperdb-dep">hyperdb
+DEP</a> must be repeated for each head, and nodes returned
+representing the set of all unique values.</p>
+<p>The situation where a <code>get()</code> operation multiple heads returns different values
+for the same key is called a &quot;conflict&quot; and requires a &quot;merge&quot; to resolve. Some
+writer (either a human being or application-layer code) must decide on the
+correct value for the key and write that value as a new entry (with a vector
+clock that includes the previous heads). The procedure for choosing the best
+value to use in a given conflict is sometimes easy to determine, but is
+impossible to determine algorithmically in the general case. See the &quot;Usage&quot;
+section for more details.</p>
+<h1 id="examples">Examples</h1>
+<p>Every hyperdb hypercore feed starts with a protocol header (of type
+<code>HypercoreHeader</code>) at entry index 0, as specified in DEP-0007. Feed entry
+indexes (aka, sequence numbers), are zero-indexed. With the header message at
+index 0, hyperdb entries start at index 1.</p>
+<p>Let&#39;s say Alice starts a new hyperdb and writes two key/value entries to it:</p>
+<pre><code>// Operations
+Alice: db.put(&#39;/foo/bar&#39;, &#39;baz&#39;)
+Alice: db.put(&#39;/foo/2&#39;,   &#39;{&quot;json&quot;:3}&#39;)
+
+// Alice&#39;s Feed
+0 (HypercoreHeader, protocol=hyperdb)
+1 (key=&#39;/foo/bar&#39;, value=&#39;baz&#39;,
+   vector_clock=[1], inflated=null, feeds=[&#39;a11ce...&#39;]) (InflatedEntry)
+2 (key=&#39;/foo/2&#39;, value=&#39;{&quot;json&quot;:3}&#39;,
+   vector_clock=[1], inflated=0)
+
+// Graph
+Alice:  1  &lt;---  2
+</code></pre><p>The vector clock at <code>seq=2</code> points back to <code>seq=1</code>.</p>
+<p>Next Alice <em>authorizes</em> Bob to write to the database. Internally, this means Alice
+writes an Inflated entry to her feed that contains Bob&#39;s Feed (identified by his
+public key) in her feed list.</p>
+<pre><code>// Operations
+Alice: db.authorize(&#39;b0b123...&#39;)
+
+// Alice&#39;s Feed
+0 (HypercoreHeader, protocol=hyperdb)
+1 (key=&#39;/foo/bar&#39;, value=&#39;baz&#39;,
+   vector_clock=[1], inflated=null, feeds=[&#39;a11ce...&#39;]) (InflatedEntry)
+2 (key=&#39;/foo/2&#39;, value=&#39;{&quot;json&quot;:3}&#39;,
+   vector_clock=[1], inflated=1) (Entry)
+3 (key=null, value=null,
+   vector_clock=[2], inflated=1, feeds=[&#39;a11ce...&#39;, &#39;b0b123...&#39;]) (InflatedEntry)
+
+// Graph
+Alice: 1  &lt;---  2  &lt;---  3
+</code></pre><p>Bob writes a value to his feed, and then Alice and Bob sync. The result is:</p>
+<pre><code>// Operations
+Bob: db.put(&#39;/a/b&#39;, &#39;12)
+
+// Alice&#39;s Feed
+0 (HypercoreHeader, protocol=hyperdb)
+1 (key=&#39;/foo/bar&#39;, value=&#39;baz&#39;,
+   vector_clock=[1], inflated=null, feeds=[&#39;a11ce...&#39;]) (InflatedEntry)
+2 (key=&#39;/foo/2&#39;, value=&#39;{&quot;json&quot;:3}&#39;,
+   vector_clock=[1], inflated=1) (Entry)
+3 (key=null, value=null,
+   vector_clock=[2], inflated=1, feeds=[&#39;a11ce...&#39;, &#39;b0b123...&#39;]) (InflatedEntry)
+
+// Bob&#39;s Feed
+0 (HypercoreHeader, protocol=hyperdb)
+1 (key=&#39;/a/b&#39;, value=&#39;12&#39;,
+   vector_clock=[0], inflated=null, feeds=[&#39;b0b123...&#39;]) (InflatedEntry))
+
+// Graph
+Alice: 1  &lt;---  2  &lt;---  3
+Bob  : 1
+</code></pre><p>Notice that none of Alice&#39;s entries refer to Bob&#39;s, and vice versa. Neither has
+written any entries to their feeds since the two became aware of each other.
+Right now there are two &quot;heads&quot; of the graph: Alice&#39;s feed at seq 3, and Bob&#39;s
+feed at seq 1. Any <code>get()</code> operations would need to descend from both heads,
+though in this situation there would be no conflicts as the keys in the two
+feeds are disjoint.</p>
+<p>Next, Alice writes a new value, and her latest entry will refer to Bob&#39;s:</p>
+<pre><code>// Operations
+Alice: db.put(&#39;/foo/hup&#39;, &#39;beep&#39;)
+
+// Alice&#39;s Feed
+0 (HypercoreHeader, protocol=hyperdb)
+1 (key=&#39;/foo/bar&#39;, value=&#39;baz&#39;,
+   vector_clock=[0], inflated=null, feeds=[&#39;a11ce...&#39;]) (InflatedEntry)
+2 (key=&#39;/foo/2&#39;, value=&#39;{&quot;json&quot;:3}&#39;,
+   vector_clock=[0], inflated=0) (Entry)
+3 (key=null, value=null,
+   vector_clock=[1, null], inflated=0, feeds=[&#39;a11ce...&#39;, &#39;b0b123...&#39;]) (InflatedEntry)
+4 (key=&#39;/foo/hup&#39;, value=&#39;beep&#39;,
+   vector_clock=[2,0], inflated=2) (Entry)
+
+// Bob&#39;s Feed
+0 (HypercoreHeader, protocol=hyperdb)
+1 (key=&#39;/a/b&#39;, value=&#39;12&#39;,
+   vector_clock=[0], inflated=null, feeds=[&#39;b0b123...&#39;]) (InflatedEntry))
+
+
+// Graph
+Alice: 1  &lt;---  2  &lt;---  3  &lt;--/  4
+Bob  : 1  &lt;-------------------/
+</code></pre><p>Alice&#39;s latest feed entry now points to Bob&#39;s latest feed entry, and there is
+only one &quot;head&quot; in the database. This means that any <code>get()</code> operations only
+need to run once, starting at <code>seq=4</code> in Alice&#39;s feed.</p>
+<h1 id="security-and-privacy-concerns">Security and Privacy Concerns</h1>
+<p>As noted above, there is no existing mechanism for removing authorization for a
+feed once added, and an authorized feed may recursively authorize additional
+feeds. There is also no mechanism to restrict the scope of an authorized feed&#39;s
+actions (eg, limit to only a specific path prefix). This leaves application
+designers and users with few tools to control trust or access (&quot;all or
+nothing&quot;). Care must be taken in particular if self-mutating software is being
+distributed via hyperdb, or when action may be taken automatically based on the
+most recent content of a database (eg, bots or even third-party tools may
+publish publicly, or even take real-world action like controlling an electrical
+relay).</p>
+<p>There is no mechanism to remove malicious history (or any history for that
+matter); if an authorized (but hostile) writer appends a huge number of key
+operations (bloating hyperdb metadata size), or posts offensive or illegal
+content to a database, there is no way to permanently remove the data without
+creating an new database.</p>
+<p>The read semantics of hyperdb are unchanged from hypercore: an actor does not
+need to be &quot;authorized&quot; (for writing) to read the full history of a database,
+they only need the public key.</p>
+<p>As noted in other DEPs, a malicious writer can potentially execute a denial of
+service (DoS) attack by appending hyperdb entries that for a cyclic loop of
+references.</p>
+<h1 id="drawbacks">Drawbacks</h1>
+<p>Mutli-writer capability incurs a non-trivial increase in library, application,
+and user experience complexity. For many applications, collaboration is an
+essential feature, and the complexity is easily justified. To minimize
+complexity for applications which do not need multi-writer features,
+implementation authors should consider configuration modes which hide the
+complexity of unused features. For example, by having an option to returning a
+single node for a <code>get()</code> (and throw an error if there is a conflict), or a
+flag to throw an error if a database unexpectedly contains more than a single
+feed.</p>
+<p>Two tasks (conflict merges and secure key distribution) are left to application
+developers. Both of these are Hard Problems. The current design mitigates the
+former by reducing the number of merge conflicts that need to be handled by an
+application (aka, only the non-trivial ones need to be handled), and
+implementation authors are encouraged to provide an ergonomic API for writing
+conflict resolvers. The second problem (secure key distribution) is out of
+scope for this DEP. It is hoped that at least one pattern or library will
+emerge from the Dat ecosystem such that each application author doesn&#39;t need to
+invent a solution from scratch.</p>
+<h1 id="rationale-and-alternatives">Rationale and alternatives</h1>
+<p>Design goals for hyperdb (including the multi-writer feature) included:</p>
+<ul>
+<li>ability to execute operations (get, put) with a sparse (partial) replication
+of the database, using as few additional network requests as possible</li>
+<li>minimal on-disk and on-wire overhead</li>
+<li>implemented on top of an append-only log (to build on top of hypercore)</li>
+</ul>
+<p>If a solution for core use cases like collaboration and multi-device
+synchronization is not provided at a low level (as this DEP provides), each
+application will need to invent a solution at a higher level, incurring
+duplicated effort and a higher risk of bugs.</p>
+<p>As an alternative to CRDTs, Operational Transformation (OT) has a reputation
+for being more difficult to understand and implement.</p>
+<h1 id="unresolved-questions">Unresolved questions</h1>
+<p>What is the actual on-disk layout (folder structure), if not what is documented
+here?</p>
+<p>The local feed&#39;s sequence number could skipped from vector clocks, because it&#39;s
+implied by the sequence number of the hypercore entry itself. Same with the key
+in the feed list (for inflated entries). In both cases, the redundant data is
+retained for simplicity.</p>
+<p>If there are multiple heads, but they all return the same <code>value</code> for a <code>get()</code>
+operation, how is it decided which <code>node</code> will be returned? AKA, values are the
+same, but node metadata might not be (order of vector clock, etc).</p>
+<p>Suspect that some details are off in the example: shouldn&#39;t the InflatedEntry
+authorizing a new feed include a vector clock reference to a specific seq in
+that feed? Should new local (not yet authorized) feeds reference
+their source in an initial InflatedEntry (eg, Bob at seq=0)? Should the first
+InflatedEntry in a feed point to itself in it&#39;s vector clock?</p>
+<h1 id="changelog">Changelog</h1>
+<p>As of March 2018, Mathias Buus (@mafintosh) is leading development of a hyperdb
+nodejs module on <a href="https://github.com/mafintosh/hyperdb">github</a>, which includes
+multi-writer features and is the basis for this DEP.</p>
+<p>Jim Pick (@jimpick) has been an active contributor working out multi-writer details.</p>
+<ul>
+<li>2017-12-06: @noffle publishes <code>ARCHITECTURE.md</code> overview in the
+<a href="https://github.com/mafintosh/hyperdb/blob/master/ARCHITECTURE.md">hyperdb github repo</a></li>
+<li>2018-05-02: First round of public review</li>
+<li>2018-05-23: hyperdb 3.0.0 node.js implementation released</li>
+<li>2018-06-10: Second draft submitted for review</li>
+<li>2018-07-06: Accepted with Draft status (after edits)</li>
+<li>2018-11-17: Clarify example indexing with HypercoreHeaders</li>
+</ul>
+
+      </main>
+    </div>
+  </body>
+</html>

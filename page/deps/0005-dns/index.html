@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <head>
+    <title>DEP-0005: DNS - Dat Protocol</title>
+    <link rel="stylesheet" href="../../static/style.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Dat Protocol</h1>
+      <h2>DEP-0005: DNS</h2>
+      <main>
+        <p>Title: <strong>DEP-0005: DNS</strong></p>
+<p>Short Name: <code>0005-dns</code></p>
+<p>Type: Informative</p>
+<p>Status: Draft (as of 2018-04-27)</p>
+<p>Github PR: <a href="https://github.com/datprotocol/DEPs/pull/25">PR#25</a></p>
+<p>Authors: Paul Frazee</p>
+<h1 id="summary">Summary</h1>
+<p>Dat&#39;s data structures (HyperCore, HyperDB, and HyperDrive) are addressed using
+cryptographic keys. In the context of Web browsers, a URL scheme is used which
+is structured as <code>&#39;dat://&#39; {key} &#39;/&#39; {path...}</code>.</p>
+<p>This DEP describes an additional protocol for addressing Dats using DNS short names.</p>
+<h1 id="motivation">Motivation</h1>
+<p>The cryptographic keys which address Dats are secure and global, but not human-readable. This creates a usability problem.</p>
+<p>The goal of this DEP is to leverage DNS to provide human-readable shortnames which map to Dat&#39;s cryptographic addresses. The solution...</p>
+<ul>
+<li>Must provide a single canonical Dat URL for the domain. It should not be possible for a name to have multiple valid mappings. (No conflict.)</li>
+<li>Must not be controllable by non-owners of the domain. It should not be possible for third parties to modify the mapping. (Secure.)</li>
+<li>Should be accessible to as many users as possible. (Convenient.)</li>
+</ul>
+<p>An initial proposal (the <a href="https://web.archive.org/web/20171013151452/https://github.com/beakerbrowser/beaker/wiki/Authenticated-Dat-URLs-and-HTTPS-to-Dat-Discovery">&quot;.well-known solution&quot;</a>) has had prior usage in the Beaker Browser and Dat CLI. A followup proposal (the <a href="https://web.archive.org/web/20180427202745/https://github.com/beakerbrowser/beaker/wiki/Dat-DNS-TXT-records-with-optional-DNS-over-HTTPS">&quot;DNS TXT solution&quot;</a>) was made recently, but has not yet been deployed. This DEP intends to unify these proposals formally.</p>
+<h1 id="usage-documentation">Usage Documentation</h1>
+<p>Users may provide a Dat URL to clients with the following structure: <code>&#39;dat://&#39; {name} &#39;/&#39;</code>. </p>
+<p>If the <code>name</code> is a 64-character hex string, it should be considered a &quot;key&quot; and no DNS-resolution should occur. If <code>name</code> matches the following RegExp, it is considered a &quot;key&quot;:</p>
+<pre><code>^[0-9a-f]{64}$
+</code></pre><p>If the <code>name</code> does not match this RegExp, it is a &quot;domain name&quot; and requires resolution. A Dat client should follow the <a href="#resolution-process">resolution process</a> to do this.</p>
+<pre><code>domain: dat://beakerbrowser.com/
+key:    dat://87ed2e3b160f261a032af03921a3bd09227d0a4cde73466c17114816cae43336/
+</code></pre><p>Users have multiple options for creating a domain-name mapping.</p>
+<h2 id="dns-txt-record">DNS TXT record</h2>
+<p>The first option is to set a DNS TXT record at the domain which maps to a &quot;key&quot;-addressed Dat URL. The client will lookup this TXT record first and load the resulting Dat. That record should contain the following schema:</p>
+<pre><code>datkey={key}
+</code></pre><p>The above schema does not have to start of the TXT record, it just has to match somewhere in the TXT record. The &#39;key&#39; must be a 64-character hex string.</p>
+<h2 id="-well-known-dat">.well-known/dat</h2>
+<p>The second option is to run an HTTPS server at the domain name which includes a <code>/.well-known/dat</code> resource. That resource should provide a text file with the following schema:</p>
+<pre><code>dat://{key}
+TTL={time in seconds}
+</code></pre><p><code>TTL</code> is optional and will default to <code>3600</code> (one hour). If set to <code>0</code>, the entry is not cached.</p>
+<h1 id="resolution-process">Resolution process</h1>
+<p>Resolution of a Dat at <code>dat://{name}</code> should follow this process:</p>
+<ul>
+<li>Client checks its names cache. If a non-expired entry is found, return with the entry.</li>
+<li>Client issues a DNS TXT request for <code>name</code>. This request should be issued via a secure transport (see <a href="#dns-over-https">&quot;DNS-over-HTTPS&quot;</a>).</li>
+<li>Client iterates all TXT records given (skip if none). If a record&#39;s value matches the TXT record schema (see below):<ul>
+<li>If the record includes a non-zero TTL, store the record value in the names cache.</li>
+<li>Return the record value.</li>
+</ul>
+</li>
+<li>Client issues an HTTPS GET request to <code>https://{name}/.well-known/dat</code>.<ul>
+<li>If the server responds with a <code>404 Not Found</code> status, client stores a <code>null</code> entry in the names cache with a TTL of 3600 and returns a failed lookup.</li>
+<li>If the server responds with anything other than a <code>200 OK</code> status, return a failed lookup.</li>
+<li>If the server responds with a malformed file (see below), return a failed lookup.</li>
+<li>If the server responds with a well-formed file, store the record value in the names cache (default TTL to <code>3600</code> if not provided) and return the record value.</li>
+</ul>
+</li>
+</ul>
+<p>The DNS TXT record must contain the following schema:</p>
+<pre><code>&#39;datkey=&#39; [0-9a-f]{64}
+</code></pre><p>The <code>/.well-known/dat</code> file must match this schema:</p>
+<pre><code>&#39;dat://&#39; [0-9a-f]{64} &#39;/&#39;?
+( &#39;TTL=&#39; [0-9]* )?
+</code></pre><p>Note that DNS-record responses may not follow a pre-defined order. Therefore the results of a lookup may be undefined if multiple TXT records exist. Also the DNS TXT record entry does not have to start the record, it just has to match somewhere in the TXT record.</p>
+<h1 id="security-and-privacy">Security and Privacy</h1>
+<p>Two issues to consider:</p>
+<ul>
+<li><strong>Security</strong>: Can we trust the lookup results for a name?</li>
+<li><strong>Privacy</strong>: Who sees the DNS lookups?</li>
+</ul>
+<p>Traditional DNS provides neither security or privacy. All looks occur over plaintext UDP. To provide security, a separate system must authenticate the record. (In the case of HTTPS records, the SSL Certificate provides authentication.)</p>
+<p>Dat does not currently have a DNS authentication record (no equivalent to the SSL certificate). Therefore a lookup using UDP can not be secured.</p>
+<p>To solve this, this DEP recommends using <a href="#dns-over-https">DNS-over-HTTPS</a>. </p>
+<h2 id="dns-over-https">DNS-over-HTTPS</h2>
+<p>Until PKI can authenticate the DNS lookups (ie via SSL certificates or equivalent) there is a risk that the DNS lookup will be intercepted by an adversary. To protect against this, the client should use DNS-over-HTTPS to lookup the DNS TXT records.</p>
+<p>Current providers:</p>
+<ul>
+<li><a href="https://developers.google.com/speed/public-dns/docs/dns-over-https">Google</a></li>
+<li><a href="https://developers.cloudflare.com/1.1.1.1/dns-over-https/json-format/">Cloudflare</a></li>
+</ul>
+<p>This solution improves on both the security and privacy of DNS lookup:</p>
+<ul>
+<li><strong>Security</strong>. Requests to the DNS provider are authenticated using the provider&#39;s SSL certificate.</li>
+<li><strong>Privacy</strong>. DNS lookups are encrypted on the wire and only made visible to the DNS provider.</li>
+</ul>
+<p>DNS-over-HTTPS still requires trust in the provider to give correct responses, but this is an improvement to UDP DNS lookups, which can be trivially MITMed by malicious actors on the network.</p>
+<p>Whereas traditional DNS leaks name lookups to everyone on the network, DNS-over-HTTPS only reveals them to the DNS provider. This still provides some opportunity for tracking, but the opportunity is reduced to the provider alone.</p>
+<h1 id="drawbacks">Drawbacks</h1>
+<ul>
+<li>The use of the <code>.well-known/dat</code> resource over HTTPS creates a dependency on a service.</li>
+<li>DNS-over-HTTPS exposes all lookups to the provider and relies on the provider to be honest. However, because this method offsets the risk of MITM attacks, this is a worthwhile trade. Future DEPs should find alternative ways to authenticate domain-name records.</li>
+</ul>
+<h1 id="rationale-and-alternatives">Rationale and alternatives</h1>
+<ul>
+<li>User-defined names registries could be used instead of DNS, but they would likely suffer from name conflicts without a top-down control.</li>
+<li>A blockchain (such as Namecoin) could be used instead of DNS, but blockchains currently have poor throughput and require users to sync large amounts of data.</li>
+<li>DNSSEC could be used instead of DNS-over-HTTPS, but it does not have the same level of support among gTLDs that DNS-over-HTTPS has.</li>
+</ul>
+<h1 id="changelog">Changelog</h1>
+<ul>
+<li>2018-04-27: First complete draft submitted for review</li>
+<li>2018-05-07: Add &quot;Security and Privacy&quot; section and rewrite DNS TXT record schema.</li>
+<li>2018-05-16: Merged as Draft after WG approval.</li>
+<li>2019-09-01: Clarified DNS TXT record datkey match can be anywhere in the TXT record</li>
+</ul>
+
+      </main>
+    </div>
+  </body>
+</html>

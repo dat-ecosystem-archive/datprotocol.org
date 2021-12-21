@@ -4,21 +4,21 @@
   "description": "Website for Dat Protocol",
   "main": "",
   "scripts": {
-    "update-DEPs": "rm -rf ./DEPs && git clone https://github.com/datprotocol/DEPs.git",
+    "update-DEPs": "rm -rf ./DEPs && git clone https://github.com/dat-ecosystem/DEPs.git",
     "build": "npm run update-DEPs && node scripts/build.js",
-    "start": "npm run build && serve build"
+    "start": "npm run build && serve ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/datprotocol/website.git"
+    "url": "git+https://github.com/dat-ecosystem/datprotocol.com.git"
   },
   "keywords": [],
   "author": "Dat Protocol WG",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/datprotocol/website/issues"
+    "url": "https://github.com/dat-ecosystem/datprotocol.com/issues"
   },
-  "homepage": "https://github.com/datprotocol/website#readme",
+  "homepage": "https://github.com/dat-ecosystem/datprotocol.com#readme",
   "dependencies": {
     "marked": "^0.3.12",
     "mkdirp": "^0.5.1",

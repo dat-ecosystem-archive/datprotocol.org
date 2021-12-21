@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+  <head>
+    <title>DEP-0006: Session Data (Extension Message) - Dat Protocol</title>
+    <link rel="stylesheet" href="../../static/style.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Dat Protocol</h1>
+      <h2>DEP-0006: Session Data (Extension Message)</h2>
+      <main>
+        <p>Title: <strong>DEP-0006: Session Data (Extension Message)</strong></p>
+<p>Short Name: <code>0006-session-data-extension</code></p>
+<p>Type: Informative</p>
+<p>Status: Draft (as of 2018-06-06)</p>
+<p>Github PR: <a href="https://github.com/datprotocol/DEPs/pull/27">https://github.com/datprotocol/DEPs/pull/27</a></p>
+<p>Authors: <a href="https://github.com/pfrazee">Paul Frazee</a></p>
+<h1 id="summary">Summary</h1>
+<p>This DEP defines the non-standard <code>session-data</code> extension message used in the Dat replication protocol. This message provides a way to attach application data to a connection, commonly used for identifying the users and broadcasting personal keys. </p>
+<h1 id="motivation">Motivation</h1>
+<p>Applications frequently need to discover which users of the application are online (presence) in order to establish bidirectional communication. For example, a chat application which uses a shared HyperDB as the channel state may need to broadcast the Hypercore keys of each user in order to authorize the joining chat-users (as in the case of &quot;Cabal&quot;). It would also be useful to broadcast Hyperdrive archive keys (as in the case of &quot;Fritter&quot; and &quot;Rotonde&quot;) or even simple plain-text identity (eg &quot;my name is Bob&quot;) to be used with other communication mechanisms.</p>
+<p>This DEP was motivated by the need for a quick solution to these use-cases. It&#39;s expected to be a stepping stone to a more sophisticated solution. It outlines an extension message which broadcasts user and session data. The two primary use-cases considered are:</p>
+<ol>
+<li>For small apps to be able to discover peers&#39; identities when shared. Examples include a dat-app containing an event invite, or a collaborative document, which want to know the identities of visitors in order to receive data from them. Scale would be kept small by the fact that the dat-app is only shared with friends. If too many people start showing up, the app could stop authorizing or reading their data. (Identity data broadcasted via this DEP should not be considered highly trust-worthy.)</li>
+<li>For dat-apps like Cabal to experiment with authorization policies at a larger scale. Cabal (a chat app) intended to use a HyperDB which any user can &quot;join&quot; as a writer and start posting to. This DEP would make it simple for Cabal to send the local keys of joining users to the owner, to be added to the &quot;channel&quot; HyperDB.</li>
+</ol>
+<h1 id="reference-documentation">Reference Documentation</h1>
+<p>This DEP is implemented using the Dat replication protocol&#39;s &quot;extension messages.&quot; In order to broadcast support for this DEP, a client should declare the <code>&#39;session-data&#39;</code> extension in the replication handshake.</p>
+<p>Session-data can be announced at any time after the connection is established by sending an extension message of type <code>&#39;session-data&#39;</code>. The message may include a payload up to 256 bytes in length. Any additional bytes should be truncated by the receiving client. The payload is a buffer of any encoding. The session-data message should not be sent frequently and a client may choose to rate-limit its handling of the events (this DEP suggests &quot;once per 5 seconds&quot;).</p>
+<p>The client should maintain a <code>sessionData</code> variable on each connection. This variable should be empty when a new connection is established. Any time a <code>&#39;session-data&#39;</code> extension message is received, the value of the <code>sessionData</code> variable should be updated to contain the payload of the message.</p>
+<p>The client may respond to the message by emitting an event, so that it may be handled by the client&#39;s application logic. The client should also make the most recent <code>sessionData</code> buffer available to the application logic after message is received.</p>
+<p>After publishing this DEP, the &quot;Beaker Browser&quot; will implement a Web API for exposing the <code>&#39;session-data&#39;</code> protocol to applications. It will restrict access so that the application code of a <code>dat://</code> site will only be able to set the session data for connections related to its own content.</p>
+<h1 id="drawbacks">Drawbacks</h1>
+<ul>
+<li>This DEP may present privacy concerns, as it may be used to track users in a similar fashion to HTTP Cookies.</li>
+<li>The payload of the <code>&#39;session-data&#39;</code> message is not authenticated in any way. If a public key is sent, proof of ownership of the private key is not provided. The lack of trust must be considered by applications which leverage the data.</li>
+<li>If the recipient of the <code>&#39;session-data&#39;</code> message is not authenticated (as is currently the case in all Dat replication connections) the client will not know who is receiving the payload and may broadcast sensitive information.</li>
+</ul>
+<h1 id="rationale-and-alternatives">Rationale and alternatives</h1>
+<p>Some applications have used the <code>peerId</code> and/or <code>userData</code> fields of the replication handshake message in order to broadcast this information. Those mechanisms are unsuitable for Web applications (as in the &quot;Beaker browser&quot;) because the sites&#39; applications are not executed reliably prior to the replication handshake. By using an extension message, we provide the same presence &amp; discovery without relying on the timing of the application-code execution.</p>
+<p>An alternative approach would be to establish an ephemeral messaging channel, perhaps using a different extension message. This ephemeral channel would broadcast the payload to the client&#39;s application code as an event when it is received, but would not retain the most recent payload as session-data. This ephemeral channel would be less effective in Web applications (as in the &quot;Beaker Browser&quot;) because it would rely on the application-code being active (loaded in a tab) at time of receipt, whereas the builtin session-data semantic makes it possible for the browser to retain the last payload on the applications&#39; behalf.</p>
+<h1 id="changelog">Changelog</h1>
+<ul>
+<li>2018-06-06: Merged as draft</li>
+<li>2018-05-31: First complete draft submitted for review</li>
+</ul>
+
+      </main>
+    </div>
+  </body>
+</html>
